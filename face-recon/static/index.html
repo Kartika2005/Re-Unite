@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CCTV Dashboard</title>
+  <style>
+    body { font-family: sans-serif; }
+    .grid { display: flex; gap: 20px; margin-top: 20px; }
+    .card {
+      width: 250px;
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+    }
+    .loading { background: #f3f3f3; }
+    .green { border-color: green; }
+    .red { border-color: red; }
+    button { margin-top: 10px; }
+    img { width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>CCTV Face Scan Dashboard</h2>
+
+<input type="file" id="refImage" />
+<button onclick="runScan()">Run New Scan</button>
+
+<div class="grid">
+  <div class="card" id="CCTV-01">
+    <h3>CCTV-01</h3>
+    <p>Status: <span>Idle</span></p>
+  </div>
+
+  <div class="card" id="CCTV-02">
+    <h3>CCTV-02</h3>
+    <p>Status: <span>Idle</span></p>
+  </div>
+</div>
+
+<script>
+async function runScan() {
+  const file = document.getElementById("refImage").files[0];
+  if (!file) {
+    alert("Upload reference image");
+    return;
+  }
+
+  ["CCTV-01", "CCTV-02"].forEach(id => {
+    const card = document.getElementById(id);
+    card.className = "card loading";
+    card.querySelector("span").innerText = "Scanning...";
+    card.querySelectorAll("img").forEach(i => i.remove());
+  });
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const res = await fetch("/scan", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await res.json();
+
+  for (const cam in data.results) {
+    const card = document.getElementById(cam);
+    const result = data.results[cam];
+
+    if (result.status === "found") {
+      card.className = "card green";
+      card.querySelector("span").innerText =
+        `FOUND (${result.score})`;
+
+      const img = document.createElement("img");
+      img.src = "data:image/png;base64," + result.image;
+      card.appendChild(img);
+    } else {
+      card.className = "card red";
+      card.querySelector("span").innerText =
+        `NOT FOUND (${result.score})`;
+    }
+  }
+}
+</script>
+
+</body>
+</html>

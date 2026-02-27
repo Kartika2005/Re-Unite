@@ -1,0 +1,15 @@
+{
+  "name": "mock-adhaar",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "dev": "bun run --watch index.ts"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

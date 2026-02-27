@@ -1,0 +1,82 @@
+[
+  {
+    "aadhaar_card_no": "1234 5678 9012",
+    "name": "Shreyas Pansare",
+    "dob": "1990-05-15",
+    "gender": "Male",
+    "phone_number": "9876543210",
+    "address": "45, MG Road, Bengaluru, Karnataka - 560001"
+  },
+  {
+    "aadhaar_card_no": "2345 6789 0123",
+    "name": "Priya Sharma",
+    "dob": "1985-11-22",
+    "gender": "Female",
+    "phone_number": "8765432109",
+    "address": "12, Nehru Nagar, Jaipur, Rajasthan - 302001"
+  },
+  {
+    "aadhaar_card_no": "3456 7890 1234",
+    "name": "Amit Patel",
+    "dob": "1978-03-08",
+    "gender": "Male",
+    "phone_number": "7654321098",
+    "address": "78, Gandhi Street, Ahmedabad, Gujarat - 380001"
+  },
+  {
+    "aadhaar_card_no": "4567 8901 2345",
+    "name": "Sneha Reddy",
+    "dob": "1995-07-30",
+    "gender": "Female",
+    "phone_number": "6543210987",
+    "address": "23, Banjara Hills, Hyderabad, Telangana - 500034"
+  },
+  {
+    "aadhaar_card_no": "5678 9012 3456",
+    "name": "Vikram Singh",
+    "dob": "1982-01-14",
+    "gender": "Male",
+    "phone_number": "9988776655",
+    "address": "56, Sector 17, Chandigarh - 160017"
+  },
+  {
+    "aadhaar_card_no": "6789 0123 4567",
+    "name": "Ananya Nair",
+    "dob": "2000-09-25",
+    "gender": "Female",
+    "phone_number": "8877665544",
+    "address": "9, Marine Drive, Kochi, Kerala - 682001"
+  },
+  {
+    "aadhaar_card_no": "7890 1234 5678",
+    "name": "Suresh Iyer",
+    "dob": "1970-12-03",
+    "gender": "Male",
+    "phone_number": "7766554433",
+    "address": "101, Anna Salai, Chennai, Tamil Nadu - 600002"
+  },
+  {
+    "aadhaar_card_no": "8901 2345 6789",
+    "name": "Meera Das",
+    "dob": "1992-06-18",
+    "gender": "Female",
+    "phone_number": "6655443322",
+    "address": "34, Park Street, Kolkata, West Bengal - 700016"
+  },
+  {
+    "aadhaar_card_no": "9012 3456 7890",
+    "name": "Arjun Mehta",
+    "dob": "1988-04-10",
+    "gender": "Male",
+    "phone_number": "9544332211",
+    "address": "67, Connaught Place, New Delhi - 110001"
+  },
+  {
+    "aadhaar_card_no": "0123 4567 8901",
+    "name": "Kavita Joshi",
+    "dob": "1998-08-05",
+    "gender": "Female",
+    "phone_number": "8433221100",
+    "address": "22, FC Road, Pune, Maharashtra - 411004"
+  }
+]
