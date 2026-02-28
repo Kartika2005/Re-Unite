@@ -145,8 +145,9 @@ export async function createMissingPersonRequest(
       }
     })();
   } catch (error) {
-    console.error("Create request error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("Create request error:", errMsg, error);
+    res.status(500).json({ error: errMsg || "Internal server error" });
   }
 }
 

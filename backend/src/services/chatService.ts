@@ -66,8 +66,8 @@ function haversineKm(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -191,6 +191,24 @@ async function buildContextBlock(
 - This Month Reported: ${s.thisMonthReported}
 - This Month Resolved: ${s.thisMonthResolved}
 - Overall Resolution Rate: ${s.resolutionRate}%\n`;
+  }
+
+  // Auto-detect name search (e.g. "find Priya", "where is Rahul", or just a person name)
+  const nameMatch = lower.match(
+    /(?:find|search|look(?:ing)?\s*(?:for)?|where\s*is|any\s*(?:info|update|case)\s*(?:on|about|for)?)\s+(.{2,})/i
+  );
+  if (nameMatch) {
+    const name = (nameMatch[1] || "").replace(/[?.!]/g, "").trim();
+    if (name.length >= 2) {
+      const cases = await searchCasesByName(name);
+      if (cases.length > 0) {
+        let block = `\n\n## SEARCH_RESULTS for "${name}"\n`;
+        for (const [i, c] of cases.entries()) {
+          block += `${i + 1}. **${c.name}** — ${c.gender || "N/A"}, Status: ${c.status}, Reported: ${new Date(c.createdAt).toLocaleDateString()}\n`;
+        }
+        return block;
+      }
+    }
   }
 
   return "";

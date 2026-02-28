@@ -21,16 +21,16 @@ function ProtectedRoute({
   role?: "CITIZEN" | "POLICE";
 }) {
   const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" />;
-  if (role && user?.role !== role) return <Navigate to="/" />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (role && user?.role !== role) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 function HomeRedirect() {
   const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" />;
-  if (user?.role === "POLICE") return <Navigate to="/police/dashboard" />;
-  return <Navigate to="/citizen/requests" />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role === "POLICE") return <Navigate to="/police/dashboard" replace />;
+  return <Navigate to="/citizen/requests" replace />;
 }
 
 function AuthenticatedApp() {
@@ -103,7 +103,7 @@ function AuthenticatedApp() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>
   );
@@ -126,7 +126,7 @@ function AppRoutes() {
           isAuthenticated ? (
             <AuthenticatedApp />
           ) : (
-            <Navigate to="/login" />
+            <Navigate to="/login" replace />
           )
         }
       />
