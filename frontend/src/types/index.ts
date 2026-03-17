@@ -163,3 +163,29 @@ export interface BountyTransaction {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AssociatedFamilyMember {
+  _id: string;
+  citizenId: string;
+  fullName: string;
+  relation: string;
+  gender?: string;
+  dateOfBirth?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  rfidTagId: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFamilyMemberPayload {
+  fullName: string;
+  relation: string;
+  gender?: string;
+  dateOfBirth?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  rfidTagId: string;
+  notes?: string;
+}

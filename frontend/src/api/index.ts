@@ -1,5 +1,7 @@
 import type {
   AuthResponse,
+  AssociatedFamilyMember,
+  CreateFamilyMemberPayload,
   MissingPersonRequest,
   PoliceNote,
   RequestDetail,
@@ -30,7 +32,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // Auth
 export async function login(
   email: string,
-  password: string
+  password: string,
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
@@ -44,7 +46,7 @@ export async function register(
   name: string,
   email: string,
   password: string,
-  role: "CITIZEN" | "POLICE"
+  role: "CITIZEN" | "POLICE",
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
@@ -71,10 +73,7 @@ export async function createRequest(data: {
   if (data.gender) formData.append("gender", data.gender);
   if (data.dateOfBirth) formData.append("dateOfBirth", data.dateOfBirth);
   formData.append("bloodGroup", data.bloodGroup);
-  formData.append(
-    "lastKnownLocation",
-    JSON.stringify(data.lastKnownLocation)
-  );
+  formData.append("lastKnownLocation", JSON.stringify(data.lastKnownLocation));
   formData.append("photo", data.photo);
   if (data.aadhaarNo) formData.append("aadhaarNo", data.aadhaarNo);
   if (data.bountyAmount && data.bountyAmount > 0) {
@@ -96,9 +95,83 @@ export async function getMyRequests(): Promise<MissingPersonRequest[]> {
   return handleResponse<MissingPersonRequest[]>(res);
 }
 
+export async function activateRfidCapture(): Promise<{
+  sessionId: string;
+  expiresInMs: number;
+  captureRoute: string;
+}> {
+  const res = await fetch(`${API_BASE}/requests/family-members/rfid/activate`, {
+    method: "POST",
+    headers: getHeaders(),
+  });
+  return handleResponse<{
+    sessionId: string;
+    expiresInMs: number;
+    captureRoute: string;
+  }>(res);
+}
+
+export async function captureRfidTag(
+  sessionId: string,
+  tagId?: string,
+): Promise<{ rfidTagId: string }> {
+  const res = await fetch(`${API_BASE}/requests/family-members/rfid/capture`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ sessionId, ...(tagId ? { tagId } : {}) }),
+  });
+  return handleResponse<{ rfidTagId: string }>(res);
+}
+
+export async function ingestDeviceRfidTap(
+  citizenId: string,
+  tagId: string,
+): Promise<{ success: boolean; citizenId: string; rfidTagId: string }> {
+  const res = await fetch(
+    `${API_BASE}/requests/family-members/rfid/device-tap`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ citizenId, tagId }),
+    },
+  );
+  return handleResponse<{
+    success: boolean;
+    citizenId: string;
+    rfidTagId: string;
+  }>(res);
+}
+
+export async function getLatestDeviceRfidTap(
+  citizenId: string,
+): Promise<{ rfidTagId: string | null }> {
+  const res = await fetch(
+    `${API_BASE}/requests/family-members/rfid/latest/${encodeURIComponent(citizenId)}`,
+  );
+  return handleResponse<{ rfidTagId: string | null }>(res);
+}
+
+export async function createFamilyMember(
+  payload: CreateFamilyMemberPayload,
+): Promise<AssociatedFamilyMember> {
+  const res = await fetch(`${API_BASE}/requests/family-members`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<AssociatedFamilyMember>(res);
+}
+
+export async function getFamilyMembers(): Promise<AssociatedFamilyMember[]> {
+  const res = await fetch(`${API_BASE}/requests/family-members`, {
+    headers: getHeaders(),
+  });
+  return handleResponse<AssociatedFamilyMember[]>(res);
+}
+
 // Police
 export async function getAllRequests(
-  status?: string
+  status?: string,
 ): Promise<MissingPersonRequest[]> {
   const url = status
     ? `${API_BASE}/police/requests?status=${status}`
@@ -116,7 +189,7 @@ export async function getRequestById(id: string): Promise<RequestDetail> {
 
 export async function updateRequestStatus(
   id: string,
-  status: RequestStatus
+  status: RequestStatus,
 ): Promise<MissingPersonRequest> {
   const res = await fetch(`${API_BASE}/police/requests/${id}/status`, {
     method: "PATCH",
@@ -127,7 +200,7 @@ export async function updateRequestStatus(
 }
 
 export async function discardRequest(
-  id: string
+  id: string,
 ): Promise<MissingPersonRequest> {
   const res = await fetch(`${API_BASE}/police/requests/${id}/discard`, {
     method: "PATCH",
@@ -161,7 +234,7 @@ export async function getScanResults(id: string): Promise<ScanResult[]> {
 }
 
 export async function fetchAadhaarInfo(
-  id: string
+  id: string,
 ): Promise<MissingPersonRequest> {
   const res = await fetch(`${API_BASE}/police/requests/${id}/fetch-aadhaar`, {
     method: "POST",
@@ -177,6 +250,8 @@ export interface PublicCase {
   status: string;
   name?: string;
   gender?: string;
+  dateOfBirth?: string;
+  age?: number | null;
   bloodGroup?: string;
   createdAt: string;
 }
@@ -192,6 +267,8 @@ export interface PublicCaseDetail {
     _id: string;
     name?: string;
     gender?: string;
+    dateOfBirth?: string;
+    age?: number | null;
     bloodGroup?: string;
     photoUrl: string;
     lastKnownLocation: { latitude: number; longitude: number };
@@ -215,7 +292,7 @@ export async function submitTip(
     message: string;
     location?: { latitude: number; longitude: number };
     contactInfo?: string;
-  }
+  },
 ): Promise<unknown> {
   const res = await fetch(`${API_BASE}/public/cases/${caseId}/tip`, {
     method: "POST",
@@ -234,7 +311,7 @@ export async function getDuplicateAlerts(): Promise<DuplicateAlert[]> {
 }
 
 export async function getRequestDuplicates(
-  id: string
+  id: string,
 ): Promise<DuplicateAlert[]> {
   const res = await fetch(`${API_BASE}/police/requests/${id}/duplicates`, {
     headers: getHeaders(),
@@ -245,7 +322,7 @@ export async function getRequestDuplicates(
 export async function dismissDuplicate(alertId: string): Promise<void> {
   const res = await fetch(
     `${API_BASE}/police/alerts/duplicates/${alertId}/dismiss`,
-    { method: "PATCH", headers: getHeaders() }
+    { method: "PATCH", headers: getHeaders() },
   );
   return handleResponse<void>(res);
 }
@@ -253,7 +330,7 @@ export async function dismissDuplicate(alertId: string): Promise<void> {
 export async function linkDuplicate(alertId: string): Promise<void> {
   const res = await fetch(
     `${API_BASE}/police/alerts/duplicates/${alertId}/link`,
-    { method: "PATCH", headers: getHeaders() }
+    { method: "PATCH", headers: getHeaders() },
   );
   return handleResponse<void>(res);
 }
@@ -262,7 +339,7 @@ export async function linkDuplicate(alertId: string): Promise<void> {
 export async function sendChatMessage(
   messages: { role: string; content: string }[],
   location?: { latitude: number; longitude: number },
-  onChunk?: (fullText: string) => void
+  onChunk?: (fullText: string) => void,
 ): Promise<string> {
   const token = localStorage.getItem("token");
   const response = await fetch(`${API_BASE}/chat`, {
@@ -309,7 +386,7 @@ export async function sendChatMessage(
 
 // ─── Bounty ─────────────────────────────────────────────
 export async function getBounty(
-  requestId: string
+  requestId: string,
 ): Promise<BountyTransaction | null> {
   const res = await fetch(`${API_BASE}/bounty/${requestId}`, {
     headers: getHeaders(),
@@ -318,7 +395,7 @@ export async function getBounty(
 }
 
 export async function initiateBountyPayment(
-  requestId: string
+  requestId: string,
 ): Promise<{ redirectUrl: string; merchantOrderId: string }> {
   const res = await fetch(`${API_BASE}/bounty/${requestId}/pay`, {
     method: "POST",
@@ -329,18 +406,28 @@ export async function initiateBountyPayment(
 
 export async function verifyBountyPayment(
   requestId: string,
-  orderId: string
-): Promise<{ success: boolean; state: string; amount?: number; transactionId?: string }> {
+  orderId: string,
+): Promise<{
+  success: boolean;
+  state: string;
+  amount?: number;
+  transactionId?: string;
+}> {
   const res = await fetch(
     `${API_BASE}/bounty/${requestId}/verify?orderId=${encodeURIComponent(orderId)}`,
-    { headers: getHeaders() }
+    { headers: getHeaders() },
   );
-  return handleResponse<{ success: boolean; state: string; amount?: number; transactionId?: string }>(res);
+  return handleResponse<{
+    success: boolean;
+    state: string;
+    amount?: number;
+    transactionId?: string;
+  }>(res);
 }
 
 export async function awardBounty(
   requestId: string,
-  tipId: string
+  tipId: string,
 ): Promise<BountyTransaction> {
   const res = await fetch(`${API_BASE}/bounty/${requestId}/award`, {
     method: "PATCH",
@@ -351,7 +438,7 @@ export async function awardBounty(
 }
 
 export async function releaseBounty(
-  requestId: string
+  requestId: string,
 ): Promise<BountyTransaction> {
   const res = await fetch(`${API_BASE}/bounty/${requestId}/release`, {
     method: "PATCH",
@@ -361,7 +448,7 @@ export async function releaseBounty(
 }
 
 export async function cancelBounty(
-  requestId: string
+  requestId: string,
 ): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/bounty/${requestId}/cancel`, {
     method: "PATCH",

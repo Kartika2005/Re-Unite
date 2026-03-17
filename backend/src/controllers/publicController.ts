@@ -10,6 +10,23 @@ import {
 } from "../services/groqService.ts";
 import type { SubmitTipDTO } from "../types/index.ts";
 
+function calculateAge(dateOfBirth?: Date | string | null): number | null {
+  if (!dateOfBirth) return null;
+
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+
+  const hasHadBirthdayThisYear =
+    today.getMonth() > dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age >= 0 ? age : null;
+}
+
 export async function getPublicCases(req: Request, res: Response) {
   try {
     const cases = await MissingPersonRequest.find(
@@ -19,14 +36,20 @@ export async function getPublicCases(req: Request, res: Response) {
         status: 1,
         name: 1,
         gender: 1,
+        dateOfBirth: 1,
         bloodGroup: 1,
         createdAt: 1,
-      }
+      },
     )
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(cases);
+    const casesWithAge = cases.map((c) => ({
+      ...c,
+      age: calculateAge(c.dateOfBirth),
+    }));
+
+    res.json(casesWithAge);
   } catch (error) {
     console.error("getPublicCases error:", error);
     res.status(500).json({ error: "Failed to fetch cases" });
@@ -40,6 +63,7 @@ export async function getPublicCaseById(req: Request, res: Response) {
     const caseData = await MissingPersonRequest.findById(id, {
       name: 1,
       gender: 1,
+      dateOfBirth: 1,
       bloodGroup: 1,
       photoUrl: 1,
       lastKnownLocation: 1,
@@ -53,13 +77,28 @@ export async function getPublicCaseById(req: Request, res: Response) {
       return;
     }
 
+    const caseWithAge = {
+      ...caseData,
+      age: calculateAge(caseData.dateOfBirth),
+    };
+
     if (["FOUND", "DECLINED", "DISCARDED"].includes(caseData.status)) {
-      res.json({ case: caseData, resolved: true, tipCount: 0, bountyAmount: (caseData as any).bountyAmount || 0 });
+      res.json({
+        case: caseWithAge,
+        resolved: true,
+        tipCount: 0,
+        bountyAmount: (caseData as any).bountyAmount || 0,
+      });
       return;
     }
 
     const tipCount = await Tip.countDocuments({ requestId: id });
-    res.json({ case: caseData, resolved: false, tipCount, bountyAmount: (caseData as any).bountyAmount || 0 });
+    res.json({
+      case: caseWithAge,
+      resolved: false,
+      tipCount,
+      bountyAmount: (caseData as any).bountyAmount || 0,
+    });
   } catch (error) {
     console.error("getPublicCaseById error:", error);
     res.status(500).json({ error: "Failed to fetch case" });
@@ -130,7 +169,7 @@ export async function voiceToForm(req: Request, res: Response) {
     // 1. Transcribe audio
     const transcript = await transcribeAudio(
       req.file.buffer,
-      req.file.mimetype
+      req.file.mimetype,
     );
 
     // 2. Parse into form fields based on mode

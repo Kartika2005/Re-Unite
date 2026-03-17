@@ -4,6 +4,7 @@ import { DashboardLayout } from "./components/DashboardLayout";
 import { LoginPage, RegisterPage } from "./pages/AuthPages";
 import { ReportMissing } from "./pages/citizen/ReportMissing";
 import { MyRequests } from "./pages/citizen/MyRequests";
+import { FamilyMembers } from "./pages/citizen/FamilyMembers";
 import { PoliceDashboard } from "./pages/police/PoliceDashboard";
 import { RequestDetail } from "./pages/police/RequestDetail";
 import { CaseMap } from "./pages/CaseMap";
@@ -29,7 +30,8 @@ function ProtectedRoute({
 function HomeRedirect() {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user?.role === "POLICE") return <Navigate to="/police/dashboard" replace />;
+  if (user?.role === "POLICE")
+    return <Navigate to="/police/dashboard" replace />;
   return <Navigate to="/citizen/requests" replace />;
 }
 
@@ -53,6 +55,14 @@ function AuthenticatedApp() {
           element={
             <ProtectedRoute role="CITIZEN">
               <MyRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/family-members"
+          element={
+            <ProtectedRoute role="CITIZEN">
+              <FamilyMembers />
             </ProtectedRoute>
           }
         />

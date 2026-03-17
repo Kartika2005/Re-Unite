@@ -1,7 +1,14 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as api from "../../api";
-import type { MissingPersonRequest, PoliceNote, ScanResult, Tip, CaseEvent as CaseEventType, BountyTransaction } from "../../types";
+import type {
+  MissingPersonRequest,
+  PoliceNote,
+  ScanResult,
+  Tip,
+  CaseEvent as CaseEventType,
+  BountyTransaction,
+} from "../../types";
 import { StatusBadge } from "../../components/StatusBadge";
 import { LocationPicker } from "../../components/LocationPicker";
 import { useSocket, SocketEvents } from "../../hooks/useSocket";
@@ -14,37 +21,116 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  ArrowLeft, AlertTriangle, FileText, RefreshCw, Trash2, CreditCard, Search,
-  CheckCircle, ClipboardList, Lightbulb, Coins, Trophy, Handshake,
-  MapPin, Camera, Eye, Copy, QrCode, Phone, Loader2, XCircle,
-  ScanLine, ChevronRight, Link2, X, Clock, Send, IndianRupee,
+  ArrowLeft,
+  AlertTriangle,
+  FileText,
+  RefreshCw,
+  Trash2,
+  CreditCard,
+  Search,
+  CheckCircle,
+  ClipboardList,
+  Lightbulb,
+  Coins,
+  Trophy,
+  Handshake,
+  MapPin,
+  Camera,
+  Eye,
+  Copy,
+  QrCode,
+  Phone,
+  Loader2,
+  XCircle,
+  ScanLine,
+  ChevronRight,
+  Link2,
+  Clock,
+  Send,
+  IndianRupee,
 } from "lucide-react";
 
 const CCTV_CAMERAS = ["CCTV-001", "CCTV-002", "CCTV-003", "CCTV-004"];
 
-const EVENT_CONFIG: Record<string, { icon: ReactNode; bg: string; label: string }> = {
-  REPORT_CREATED: { icon: <FileText className="h-3 w-3" />, bg: "bg-blue-100 text-blue-600", label: "Report Created" },
-  STATUS_CHANGED: { icon: <RefreshCw className="h-3 w-3" />, bg: "bg-amber-100 text-amber-600", label: "Status Changed" },
-  DISCARDED: { icon: <Trash2 className="h-3 w-3" />, bg: "bg-gray-100 text-gray-500", label: "Request Discarded" },
-  AADHAAR_FETCHED: { icon: <CreditCard className="h-3 w-3" />, bg: "bg-sky-100 text-sky-600", label: "Aadhaar Info Fetched" },
-  SCAN_TRIGGERED: { icon: <Search className="h-3 w-3" />, bg: "bg-violet-100 text-violet-600", label: "Face Scan Started" },
-  SCAN_COMPLETED: { icon: <CheckCircle className="h-3 w-3" />, bg: "bg-green-100 text-green-600", label: "Scan Results Received" },
-  NOTE_ADDED: { icon: <ClipboardList className="h-3 w-3" />, bg: "bg-orange-100 text-orange-600", label: "Investigation Note Added" },
-  TIP_RECEIVED: { icon: <Lightbulb className="h-3 w-3" />, bg: "bg-yellow-100 text-yellow-600", label: "Public Tip Received" },
-  DUPLICATE_DETECTED: { icon: <AlertTriangle className="h-3 w-3" />, bg: "bg-red-100 text-red-600", label: "Duplicate Case Detected" },
-  BOUNTY_PAID: { icon: <Coins className="h-3 w-3" />, bg: "bg-green-100 text-green-600", label: "Bounty Payment Received" },
-  BOUNTY_AWARDED: { icon: <Trophy className="h-3 w-3" />, bg: "bg-amber-100 text-amber-600", label: "Bounty Awarded to Tipper" },
-  BOUNTY_RELEASED: { icon: <Handshake className="h-3 w-3" />, bg: "bg-blue-100 text-blue-600", label: "Bounty Released to Tipper" },
+const EVENT_CONFIG: Record<
+  string,
+  { icon: ReactNode; bg: string; label: string }
+> = {
+  REPORT_CREATED: {
+    icon: <FileText className="h-3 w-3" />,
+    bg: "bg-blue-100 text-blue-600",
+    label: "Report Created",
+  },
+  STATUS_CHANGED: {
+    icon: <RefreshCw className="h-3 w-3" />,
+    bg: "bg-amber-100 text-amber-600",
+    label: "Status Changed",
+  },
+  DISCARDED: {
+    icon: <Trash2 className="h-3 w-3" />,
+    bg: "bg-gray-100 text-gray-500",
+    label: "Request Discarded",
+  },
+  AADHAAR_FETCHED: {
+    icon: <CreditCard className="h-3 w-3" />,
+    bg: "bg-sky-100 text-sky-600",
+    label: "Aadhaar Info Fetched",
+  },
+  SCAN_TRIGGERED: {
+    icon: <Search className="h-3 w-3" />,
+    bg: "bg-violet-100 text-violet-600",
+    label: "Face Scan Started",
+  },
+  SCAN_COMPLETED: {
+    icon: <CheckCircle className="h-3 w-3" />,
+    bg: "bg-green-100 text-green-600",
+    label: "Scan Results Received",
+  },
+  NOTE_ADDED: {
+    icon: <ClipboardList className="h-3 w-3" />,
+    bg: "bg-orange-100 text-orange-600",
+    label: "Investigation Note Added",
+  },
+  TIP_RECEIVED: {
+    icon: <Lightbulb className="h-3 w-3" />,
+    bg: "bg-yellow-100 text-yellow-600",
+    label: "Public Tip Received",
+  },
+  DUPLICATE_DETECTED: {
+    icon: <AlertTriangle className="h-3 w-3" />,
+    bg: "bg-red-100 text-red-600",
+    label: "Duplicate Case Detected",
+  },
+  BOUNTY_PAID: {
+    icon: <Coins className="h-3 w-3" />,
+    bg: "bg-green-100 text-green-600",
+    label: "Bounty Payment Received",
+  },
+  BOUNTY_AWARDED: {
+    icon: <Trophy className="h-3 w-3" />,
+    bg: "bg-amber-100 text-amber-600",
+    label: "Bounty Awarded to Tipper",
+  },
+  BOUNTY_RELEASED: {
+    icon: <Handshake className="h-3 w-3" />,
+    bg: "bg-blue-100 text-blue-600",
+    label: "Bounty Released to Tipper",
+  },
 };
 
 async function generateMissingPersonPDF(
   request: MissingPersonRequest,
   locationName: string,
-  tipUrl: string
+  tipUrl: string,
 ) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -58,7 +144,9 @@ async function generateMissingPersonPDF(
   doc.text("MISSING PERSON", pageWidth / 2, 16, { align: "center" });
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("REUNITE — Help Bring Them Home", pageWidth / 2, 28, { align: "center" });
+  doc.text("REUNITE — Help Bring Them Home", pageWidth / 2, 28, {
+    align: "center",
+  });
 
   let y = 46;
 
@@ -70,7 +158,9 @@ async function generateMissingPersonPDF(
   } catch {
     doc.setTextColor(150, 150, 150);
     doc.setFontSize(10);
-    doc.text("[Photo could not be loaded]", pageWidth / 2, y + 30, { align: "center" });
+    doc.text("[Photo could not be loaded]", pageWidth / 2, y + 30, {
+      align: "center",
+    });
     y += 68;
   }
 
@@ -89,13 +179,23 @@ async function generateMissingPersonPDF(
   const details: [string, string][] = [];
   if (request.gender) details.push(["Gender", request.gender]);
   if (request.bloodGroup) details.push(["Blood Group", request.bloodGroup]);
-  if (request.dateOfBirth) details.push(["Date of Birth", new Date(request.dateOfBirth).toLocaleDateString()]);
+  if (request.dateOfBirth)
+    details.push([
+      "Date of Birth",
+      new Date(request.dateOfBirth).toLocaleDateString(),
+    ]);
   details.push(["Status", request.status.replace("_", " ")]);
-  details.push(["Reported On", new Date(request.createdAt).toLocaleDateString()]);
+  details.push([
+    "Reported On",
+    new Date(request.createdAt).toLocaleDateString(),
+  ]);
   if (locationName) details.push(["Last Seen Near", locationName]);
   if (request.lastKnownLocation) {
     const { latitude, longitude } = request.lastKnownLocation;
-    details.push(["Google Maps", `https://www.google.com/maps?q=${latitude},${longitude}`]);
+    details.push([
+      "Google Maps",
+      `https://www.google.com/maps?q=${latitude},${longitude}`,
+    ]);
   }
 
   const labelX = 30;
@@ -121,7 +221,9 @@ async function generateMissingPersonPDF(
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Have information? Scan to submit a tip:", pageWidth / 2, y, { align: "center" });
+  doc.text("Have information? Scan to submit a tip:", pageWidth / 2, y, {
+    align: "center",
+  });
   y += 8;
 
   const qrDataUrl = await QRCode.toDataURL(tipUrl, { width: 300, margin: 1 });
@@ -133,7 +235,12 @@ async function generateMissingPersonPDF(
   doc.setTextColor(148, 163, 184);
   doc.text(tipUrl, pageWidth / 2, y, { align: "center" });
   y += 5;
-  doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, y, { align: "center" });
+  doc.text(
+    `Generated on ${new Date().toLocaleDateString()}`,
+    pageWidth / 2,
+    y,
+    { align: "center" },
+  );
 
   doc.save(`missing-person-${request._id.slice(-6)}.pdf`);
 }
@@ -147,7 +254,10 @@ function loadImageAsDataUrl(url: string): Promise<string> {
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext("2d");
-      if (!ctx) { reject(new Error("no ctx")); return; }
+      if (!ctx) {
+        reject(new Error("no ctx"));
+        return;
+      }
       ctx.drawImage(img, 0, 0);
       resolve(canvas.toDataURL("image/jpeg", 0.85));
     };
@@ -171,9 +281,13 @@ export function RequestDetail() {
   const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
   const [scanningCameras, setScanningCameras] = useState<string[]>([]);
   const [locationName, setLocationName] = useState<string>("");
-  const [tipLocationNames, setTipLocationNames] = useState<Record<string, string>>({});
+  const [tipLocationNames, setTipLocationNames] = useState<
+    Record<string, string>
+  >({});
   const [events, setEvents] = useState<CaseEventType[]>([]);
-  const [duplicateAlerts, setDuplicateAlerts] = useState<import("../../types").DuplicateAlert[]>([]);
+  const [duplicateAlerts, setDuplicateAlerts] = useState<
+    import("../../types").DuplicateAlert[]
+  >([]);
   const [bounty, setBounty] = useState<BountyTransaction | null>(null);
   const [bountyLoading, setBountyLoading] = useState("");
   const socket = useSocket();
@@ -196,9 +310,15 @@ export function RequestDetail() {
       }
 
       // Fetch duplicate alerts for this case
-      api.getRequestDuplicates(id).then(setDuplicateAlerts).catch(() => {});
+      api
+        .getRequestDuplicates(id)
+        .then(setDuplicateAlerts)
+        .catch(() => {});
       // Fetch bounty info
-      api.getBounty(id).then(setBounty).catch(() => {});
+      api
+        .getBounty(id)
+        .then(setBounty)
+        .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -214,28 +334,49 @@ export function RequestDetail() {
   useEffect(() => {
     if (!id) return;
 
-    const onUpdated = (data: { requestId: string; request: MissingPersonRequest }) => {
+    const onUpdated = (data: {
+      requestId: string;
+      request: MissingPersonRequest;
+    }) => {
       if (data.requestId !== id) return;
       setRequest(data.request);
       // Re-fetch events to get the latest timeline
-      api.getRequestById(id).then((d) => setEvents(d.events || [])).catch(() => {});
+      api
+        .getRequestById(id)
+        .then((d) => setEvents(d.events || []))
+        .catch(() => {});
     };
 
-    const onScanCompleted = (data: { requestId: string; scans: ScanResult[]; request: MissingPersonRequest }) => {
+    const onScanCompleted = (data: {
+      requestId: string;
+      scans: ScanResult[];
+      request: MissingPersonRequest;
+    }) => {
       if (data.requestId !== id) return;
       setScans(data.scans);
       setRequest(data.request);
       setScanningCameras([]);
-      api.getRequestById(id).then((d) => setEvents(d.events || [])).catch(() => {});
+      api
+        .getRequestById(id)
+        .then((d) => setEvents(d.events || []))
+        .catch(() => {});
     };
 
-    const onNoteAdded = (data: { requestId: string; note: PoliceNote; event: CaseEventType }) => {
+    const onNoteAdded = (data: {
+      requestId: string;
+      note: PoliceNote;
+      event: CaseEventType;
+    }) => {
       if (data.requestId !== id) return;
       setNotes((prev) => [data.note, ...prev]);
       setEvents((prev) => [...prev, data.event]);
     };
 
-    const onTipReceived = (data: { requestId: string; tip: Tip; event: CaseEventType }) => {
+    const onTipReceived = (data: {
+      requestId: string;
+      tip: Tip;
+      event: CaseEventType;
+    }) => {
       if (data.requestId !== id) return;
       setTips((prev) => [data.tip, ...prev]);
       setEvents((prev) => [...prev, data.event]);
@@ -246,7 +387,11 @@ export function RequestDetail() {
     socket.on(SocketEvents.NOTE_ADDED, onNoteAdded);
     socket.on(SocketEvents.TIP_RECEIVED, onTipReceived);
     socket.on(SocketEvents.DUPLICATE_DETECTED, () => {
-      if (id) api.getRequestDuplicates(id).then(setDuplicateAlerts).catch(() => {});
+      if (id)
+        api
+          .getRequestDuplicates(id)
+          .then(setDuplicateAlerts)
+          .catch(() => {});
     });
 
     return () => {
@@ -268,30 +413,37 @@ export function RequestDetail() {
       return;
     }
     fetch(
-      `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${key}`
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${key}`,
     )
       .then((res) => res.json())
       .then((data) => {
         const name = data.features?.[0]?.properties?.formatted;
-        setLocationName(name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        setLocationName(
+          name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        );
       })
       .catch(() => {
         setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
       });
-  }, [request?.lastKnownLocation.latitude, request?.lastKnownLocation.longitude]);
+  }, [
+    request?.lastKnownLocation.latitude,
+    request?.lastKnownLocation.longitude,
+  ]);
 
   // Reverse-geocode tip locations
   useEffect(() => {
     const key = import.meta.env.VITE_GEOAPIFY_KEY || "";
     if (!key || tips.length === 0) return;
 
-    const tipsWithLocation = tips.filter((t) => t.location && !tipLocationNames[t._id]);
+    const tipsWithLocation = tips.filter(
+      (t) => t.location && !tipLocationNames[t._id],
+    );
     if (tipsWithLocation.length === 0) return;
 
     tipsWithLocation.forEach((tip) => {
       if (!tip.location) return;
       fetch(
-        `https://api.geoapify.com/v1/geocode/reverse?lat=${tip.location.latitude}&lon=${tip.location.longitude}&apiKey=${key}`
+        `https://api.geoapify.com/v1/geocode/reverse?lat=${tip.location.latitude}&lon=${tip.location.longitude}&apiKey=${key}`,
       )
         .then((res) => res.json())
         .then((data) => {
@@ -358,7 +510,7 @@ export function RequestDetail() {
       setRequest(updated);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch Aadhaar info"
+        err instanceof Error ? err.message : "Failed to fetch Aadhaar info",
       );
     } finally {
       setActionLoading("");
@@ -405,7 +557,12 @@ export function RequestDetail() {
   return (
     <div className="space-y-6">
       {/* Back Button */}
-      <Button variant="ghost" size="sm" onClick={() => navigate("/police/dashboard")} className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate("/police/dashboard")}
+        className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </Button>
 
@@ -423,7 +580,9 @@ export function RequestDetail() {
               const isNew = alert.newRequestId === id;
               const otherReq = isNew ? alert.existingRequest : alert.newRequest;
               const otherLabel = isNew ? "Existing Case" : "New Case";
-              const otherId = isNew ? alert.existingRequestId : alert.newRequestId;
+              const otherId = isNew
+                ? alert.existingRequestId
+                : alert.newRequestId;
 
               const sevMap: Record<string, string> = {
                 CRITICAL: "bg-red-500",
@@ -435,10 +594,18 @@ export function RequestDetail() {
                 HIGH: "bg-orange-100 text-orange-700 border-orange-200",
                 MEDIUM: "bg-yellow-100 text-yellow-700 border-yellow-200",
               };
-              const matchLabel = alert.matchType === "BOTH" ? "Face + Aadhaar" : alert.matchType === "AADHAAR" ? "Aadhaar" : "Face";
+              const matchLabel =
+                alert.matchType === "BOTH"
+                  ? "Face + Aadhaar"
+                  : alert.matchType === "AADHAAR"
+                    ? "Aadhaar"
+                    : "Face";
 
               return (
-                <div key={alert._id} className="flex items-center gap-4 rounded-lg bg-white/80 p-3 border">
+                <div
+                  key={alert._id}
+                  className="flex items-center gap-4 rounded-lg bg-white/80 p-3 border"
+                >
                   {/* Side-by-side comparison */}
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-center">
@@ -446,9 +613,13 @@ export function RequestDetail() {
                         <AvatarImage src={request.photoUrl} />
                         <AvatarFallback>TC</AvatarFallback>
                       </Avatar>
-                      <p className="text-[0.6rem] text-muted-foreground mt-0.5">This Case</p>
+                      <p className="text-[0.6rem] text-muted-foreground mt-0.5">
+                        This Case
+                      </p>
                     </div>
-                    <div className={`h-9 w-9 rounded-full ${sevMap[alert.severity] || "bg-yellow-500"} text-white flex items-center justify-center text-xs font-bold`}>
+                    <div
+                      className={`h-9 w-9 rounded-full ${sevMap[alert.severity] || "bg-yellow-500"} text-white flex items-center justify-center text-xs font-bold`}
+                    >
                       {Math.round(alert.score * 100)}%
                     </div>
                     <div className="text-center">
@@ -456,26 +627,42 @@ export function RequestDetail() {
                         <AvatarImage src={otherReq?.photoUrl} />
                         <AvatarFallback>OC</AvatarFallback>
                       </Avatar>
-                      <p className="text-[0.6rem] text-muted-foreground mt-0.5">{otherLabel}</p>
+                      <p className="text-[0.6rem] text-muted-foreground mt-0.5">
+                        {otherLabel}
+                      </p>
                     </div>
                   </div>
 
                   {/* Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm truncate">{otherReq?.name || "Unknown"}</span>
-                      <Badge variant="outline" className={`text-[0.65rem] ${sevBadge[alert.severity] || sevBadge.MEDIUM}`}>
+                      <span className="font-semibold text-sm truncate">
+                        {otherReq?.name || "Unknown"}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[0.65rem] ${sevBadge[alert.severity] || sevBadge.MEDIUM}`}
+                      >
                         {alert.severity}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {matchLabel} match · {alert.status === "LINKED" ? "Linked" : alert.status === "DISMISSED" ? "Dismissed" : "Pending review"}
+                      {matchLabel} match ·{" "}
+                      {alert.status === "LINKED"
+                        ? "Linked"
+                        : alert.status === "DISMISSED"
+                          ? "Dismissed"
+                          : "Pending review"}
                     </p>
                   </div>
 
                   {/* Actions */}
                   <div className="flex gap-1.5 shrink-0">
-                    <Button size="sm" className="h-7 text-xs" onClick={() => navigate(`/police/requests/${otherId}`)}>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => navigate(`/police/requests/${otherId}`)}
+                    >
                       <Eye className="h-3.5 w-3.5 mr-1" /> View
                     </Button>
                     {alert.status === "PENDING" && (
@@ -486,7 +673,11 @@ export function RequestDetail() {
                           className="h-7 text-xs border-green-500 text-green-700 hover:bg-green-50"
                           onClick={async () => {
                             await api.linkDuplicate(alert._id);
-                            if (id) api.getRequestDuplicates(id).then(setDuplicateAlerts).catch(() => {});
+                            if (id)
+                              api
+                                .getRequestDuplicates(id)
+                                .then(setDuplicateAlerts)
+                                .catch(() => {});
                           }}
                         >
                           <Link2 className="h-3.5 w-3.5 mr-1" /> Link
@@ -497,7 +688,11 @@ export function RequestDetail() {
                           className="h-7 text-xs"
                           onClick={async () => {
                             await api.dismissDuplicate(alert._id);
-                            if (id) api.getRequestDuplicates(id).then(setDuplicateAlerts).catch(() => {});
+                            if (id)
+                              api
+                                .getRequestDuplicates(id)
+                                .then(setDuplicateAlerts)
+                                .catch(() => {});
                           }}
                         >
                           Dismiss
@@ -521,31 +716,74 @@ export function RequestDetail() {
             <CardContent className="pt-6">
               <div className="flex gap-5">
                 <Avatar className="h-28 w-28 rounded-xl shrink-0">
-                  <AvatarImage src={request.photoUrl} alt={request.name} className="object-cover" />
-                  <AvatarFallback className="rounded-xl text-2xl">{request.name?.charAt(0) || "?"}</AvatarFallback>
+                  <AvatarImage
+                    src={request.photoUrl}
+                    alt={request.name}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="rounded-xl text-2xl">
+                    {request.name?.charAt(0) || "?"}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <h2 className="text-xl font-bold tracking-tight truncate">{request.name || "Aadhaar Report (Pending Fetch)"}</h2>
+                    <h2 className="text-xl font-bold tracking-tight truncate">
+                      {request.name || "Aadhaar Report (Pending Fetch)"}
+                    </h2>
                     <StatusBadge status={request.status} />
                   </div>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-muted-foreground">
                     {request.gender && (
-                      <div><span className="font-medium text-foreground">Gender:</span> {request.gender}</div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Gender:
+                        </span>{" "}
+                        {request.gender}
+                      </div>
                     )}
-                    <div><span className="font-medium text-foreground">Blood Group:</span> {request.bloodGroup}</div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Blood Group:
+                      </span>{" "}
+                      {request.bloodGroup}
+                    </div>
                     {request.dateOfBirth && (
-                      <div><span className="font-medium text-foreground">DOB:</span> {new Date(request.dateOfBirth).toLocaleDateString()}</div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          DOB:
+                        </span>{" "}
+                        {new Date(request.dateOfBirth).toLocaleDateString()}
+                      </div>
                     )}
-                    <div><span className="font-medium text-foreground">Reported:</span> {new Date(request.createdAt).toLocaleString()}</div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Reported:
+                      </span>{" "}
+                      {new Date(request.createdAt).toLocaleString()}
+                    </div>
                     {request.aadhaarNo && (
-                      <div><span className="font-medium text-foreground">Aadhaar:</span> {request.aadhaarNo}</div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Aadhaar:
+                        </span>{" "}
+                        {request.aadhaarNo}
+                      </div>
                     )}
                     {request.phoneNumber && (
-                      <div><span className="font-medium text-foreground">Phone:</span> {request.phoneNumber}</div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Phone:
+                        </span>{" "}
+                        {request.phoneNumber}
+                      </div>
                     )}
                     {request.address && (
-                      <div className="col-span-2"><span className="font-medium text-foreground">Address:</span> {request.address}</div>
+                      <div className="col-span-2">
+                        <span className="font-medium text-foreground">
+                          Address:
+                        </span>{" "}
+                        {request.address}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -594,24 +832,59 @@ export function RequestDetail() {
                 {request.status === "REPORTED" && (
                   <>
                     {request.aadhaarNo && !request.name && (
-                      <Button variant="outline" className="border-sky-600 text-sky-700 hover:bg-sky-50" disabled={actionLoading === "FETCH_AADHAAR"} onClick={handleFetchAadhaar}>
-                        {actionLoading === "FETCH_AADHAAR" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CreditCard className="h-4 w-4 mr-1.5" />}
+                      <Button
+                        variant="outline"
+                        className="border-sky-600 text-sky-700 hover:bg-sky-50"
+                        disabled={actionLoading === "FETCH_AADHAAR"}
+                        onClick={handleFetchAadhaar}
+                      >
+                        {actionLoading === "FETCH_AADHAAR" ? (
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-4 w-4 mr-1.5" />
+                        )}
                         Fetch Aadhaar Info
                       </Button>
                     )}
-                    <Button variant="outline" className="border-amber-600 text-amber-700 hover:bg-amber-50" disabled={actionLoading === "UNDER_REVIEW"} onClick={() => handleStatusChange("UNDER_REVIEW")}>
-                      {actionLoading === "UNDER_REVIEW" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+                    <Button
+                      variant="outline"
+                      className="border-amber-600 text-amber-700 hover:bg-amber-50"
+                      disabled={actionLoading === "UNDER_REVIEW"}
+                      onClick={() => handleStatusChange("UNDER_REVIEW")}
+                    >
+                      {actionLoading === "UNDER_REVIEW" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-1.5" />
+                      )}
                       Move to Under Review
                     </Button>
-                    <Button variant="outline" className="text-muted-foreground" disabled={actionLoading === "DISCARD"} onClick={handleDiscard}>
-                      {actionLoading === "DISCARD" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+                    <Button
+                      variant="outline"
+                      className="text-muted-foreground"
+                      disabled={actionLoading === "DISCARD"}
+                      onClick={handleDiscard}
+                    >
+                      {actionLoading === "DISCARD" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1.5" />
+                      )}
                       Discard
                     </Button>
                   </>
                 )}
                 {request.status === "UNDER_REVIEW" && (
-                  <Button className="bg-violet-600 hover:bg-violet-700" disabled={actionLoading === "SCAN"} onClick={handleScan}>
-                    {actionLoading === "SCAN" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <ScanLine className="h-4 w-4 mr-1.5" />}
+                  <Button
+                    className="bg-violet-600 hover:bg-violet-700"
+                    disabled={actionLoading === "SCAN"}
+                    onClick={handleScan}
+                  >
+                    {actionLoading === "SCAN" ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <ScanLine className="h-4 w-4 mr-1.5" />
+                    )}
                     Run Face Scan
                   </Button>
                 )}
@@ -623,19 +896,38 @@ export function RequestDetail() {
                 )}
                 {request.status === "SCANNING" && scans.length > 0 && (
                   <>
-                    <Button className="bg-green-600 hover:bg-green-700" disabled={actionLoading === "FOUND"} onClick={() => handleStatusChange("FOUND")}>
-                      {actionLoading === "FOUND" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1.5" />}
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={actionLoading === "FOUND"}
+                      onClick={() => handleStatusChange("FOUND")}
+                    >
+                      {actionLoading === "FOUND" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-1.5" />
+                      )}
                       Mark as Found
                     </Button>
-                    <Button variant="destructive" disabled={actionLoading === "DECLINED"} onClick={() => handleStatusChange("DECLINED")}>
-                      {actionLoading === "DECLINED" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <XCircle className="h-4 w-4 mr-1.5" />}
+                    <Button
+                      variant="destructive"
+                      disabled={actionLoading === "DECLINED"}
+                      onClick={() => handleStatusChange("DECLINED")}
+                    >
+                      {actionLoading === "DECLINED" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <XCircle className="h-4 w-4 mr-1.5" />
+                      )}
                       Decline
                     </Button>
                   </>
                 )}
-                {["FOUND", "DECLINED", "DISCARDED"].includes(request.status) && (
+                {["FOUND", "DECLINED", "DISCARDED"].includes(
+                  request.status,
+                ) && (
                   <p className="text-sm text-muted-foreground">
-                    This request has been resolved. No further actions available.
+                    This request has been resolved. No further actions
+                    available.
                   </p>
                 )}
               </div>
@@ -655,18 +947,33 @@ export function RequestDetail() {
                   {/* Vertical line */}
                   <div className="absolute left-[0.6875rem] top-1 bottom-1 w-0.5 bg-border" />
                   {events.map((evt, i) => {
-                    const cfg = EVENT_CONFIG[evt.action] || { icon: <FileText className="h-3 w-3" />, bg: "bg-gray-100 text-gray-500", label: evt.action };
+                    const cfg = EVENT_CONFIG[evt.action] || {
+                      icon: <FileText className="h-3 w-3" />,
+                      bg: "bg-gray-100 text-gray-500",
+                      label: evt.action,
+                    };
                     return (
-                      <div key={evt._id} className={i < events.length - 1 ? "pb-5" : ""}>
+                      <div
+                        key={evt._id}
+                        className={i < events.length - 1 ? "pb-5" : ""}
+                      >
                         <div className="relative">
                           {/* Dot */}
-                          <div className={`absolute -left-[1.625rem] top-0.5 h-5 w-5 rounded-full ${cfg.bg} flex items-center justify-center z-[1]`}>
+                          <div
+                            className={`absolute -left-[1.625rem] top-0.5 h-5 w-5 rounded-full ${cfg.bg} flex items-center justify-center z-[1]`}
+                          >
                             {cfg.icon}
                           </div>
                           <div>
                             <p className="font-semibold text-sm">{cfg.label}</p>
-                            {evt.details && <p className="text-xs text-muted-foreground mt-0.5">{evt.details}</p>}
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">{new Date(evt.createdAt).toLocaleString()}</p>
+                            {evt.details && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {evt.details}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">
+                              {new Date(evt.createdAt).toLocaleString()}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -682,16 +989,22 @@ export function RequestDetail() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Camera className="h-4 w-4 text-violet-600" /> Scanning CCTV Feeds...
+                  <Camera className="h-4 w-4 text-violet-600" /> Scanning CCTV
+                  Feeds...
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {scanningCameras.map((cam) => (
-                    <div key={cam} className="flex flex-col items-center gap-3 rounded-lg border bg-muted/50 p-5">
+                    <div
+                      key={cam}
+                      className="flex flex-col items-center gap-3 rounded-lg border bg-muted/50 p-5"
+                    >
                       <Loader2 className="h-8 w-8 text-violet-600 animate-spin" />
                       <p className="font-semibold text-sm">{cam}</p>
-                      <p className="text-xs text-muted-foreground">Analyzing footage...</p>
+                      <p className="text-xs text-muted-foreground">
+                        Analyzing footage...
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -708,7 +1021,9 @@ export function RequestDetail() {
             </CardHeader>
             <CardContent>
               {scans.length === 0 && scanningCameras.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No scans performed yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No scans performed yet.
+                </p>
               ) : scans.length === 0 ? null : (
                 <div className="space-y-3">
                   {scans.map((scan) => {
@@ -719,30 +1034,58 @@ export function RequestDetail() {
                         key={scan._id}
                         onClick={() => setSelectedScan(scan)}
                         className={`rounded-lg border-2 p-4 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${
-                          isFound ? "border-green-500" : isNotFound ? "border-red-400" : "border-muted"
+                          isFound
+                            ? "border-green-500"
+                            : isNotFound
+                              ? "border-red-400"
+                              : "border-muted"
                         }`}
                       >
                         <div className="flex items-center gap-4 mb-3">
                           <div className="flex-1">
-                            <Badge variant="outline" className={`text-xs font-bold mb-1.5 ${
-                              isFound ? "bg-green-100 text-green-700 border-green-200" : isNotFound ? "bg-red-100 text-red-700 border-red-200" : "bg-gray-100 text-gray-600"
-                            }`}>
-                              {isFound ? "MATCH FOUND" : isNotFound ? "NO MATCH" : "ERROR"}
+                            <Badge
+                              variant="outline"
+                              className={`text-xs font-bold mb-1.5 ${
+                                isFound
+                                  ? "bg-green-100 text-green-700 border-green-200"
+                                  : isNotFound
+                                    ? "bg-red-100 text-red-700 border-red-200"
+                                    : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              {isFound
+                                ? "MATCH FOUND"
+                                : isNotFound
+                                  ? "NO MATCH"
+                                  : "ERROR"}
                             </Badge>
                             <p className="font-semibold text-sm">
                               Confidence:{" "}
-                              <span className={scan.confidenceScore >= 80 ? "text-green-600" : scan.confidenceScore >= 60 ? "text-amber-600" : "text-red-600"}>
+                              <span
+                                className={
+                                  scan.confidenceScore >= 80
+                                    ? "text-green-600"
+                                    : scan.confidenceScore >= 60
+                                      ? "text-amber-600"
+                                      : "text-red-600"
+                                }
+                              >
                                 {scan.confidenceScore}%
                               </span>
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              CCTV: {scan.cctvId} · {new Date(scan.createdAt).toLocaleString()}
+                              CCTV: {scan.cctvId} ·{" "}
+                              {new Date(scan.createdAt).toLocaleString()}
                             </p>
                           </div>
                           <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                         </div>
                         {isFound && scan.bestMatchImageUrl && (
-                          <img src={scan.bestMatchImageUrl} alt="Match" className="w-full h-44 rounded-md object-cover bg-muted" />
+                          <img
+                            src={scan.bestMatchImageUrl}
+                            alt="Match"
+                            className="w-full h-44 rounded-md object-cover bg-muted"
+                          />
                         )}
                       </div>
                     );
@@ -753,16 +1096,30 @@ export function RequestDetail() {
           </Card>
 
           {/* Scan Detail Dialog */}
-          <Dialog open={!!selectedScan} onOpenChange={() => setSelectedScan(null)}>
+          <Dialog
+            open={!!selectedScan}
+            onOpenChange={() => setSelectedScan(null)}
+          >
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
                   {selectedScan && (
                     <>
-                      <Badge variant="outline" className={`text-xs font-bold ${
-                        selectedScan.status === "found" ? "bg-green-100 text-green-700 border-green-200" : selectedScan.status === "not_found" ? "bg-red-100 text-red-700 border-red-200" : "bg-gray-100 text-gray-600"
-                      }`}>
-                        {selectedScan.status === "found" ? "MATCH FOUND" : selectedScan.status === "not_found" ? "NO MATCH" : "ERROR"}
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-bold ${
+                          selectedScan.status === "found"
+                            ? "bg-green-100 text-green-700 border-green-200"
+                            : selectedScan.status === "not_found"
+                              ? "bg-red-100 text-red-700 border-red-200"
+                              : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {selectedScan.status === "found"
+                          ? "MATCH FOUND"
+                          : selectedScan.status === "not_found"
+                            ? "NO MATCH"
+                            : "ERROR"}
                       </Badge>
                       <span>CCTV: {selectedScan.cctvId}</span>
                       <span className="text-sm text-muted-foreground font-normal">
@@ -774,17 +1131,32 @@ export function RequestDetail() {
               </DialogHeader>
               {selectedScan && (
                 <div>
-                  {selectedScan.status === "found" && selectedScan.bestMatchImageUrl ? (
-                    <img src={selectedScan.bestMatchImageUrl} alt="Match detail" className="w-full rounded-lg object-contain bg-muted max-h-[60vh]" />
+                  {selectedScan.status === "found" &&
+                  selectedScan.bestMatchImageUrl ? (
+                    <img
+                      src={selectedScan.bestMatchImageUrl}
+                      alt="Match detail"
+                      className="w-full rounded-lg object-contain bg-muted max-h-[60vh]"
+                    />
                   ) : (
                     <div className="w-full h-52 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-                      {selectedScan.status === "error" ? "Scan encountered an error" : "No matching face detected"}
+                      {selectedScan.status === "error"
+                        ? "Scan encountered an error"
+                        : "No matching face detected"}
                     </div>
                   )}
                   <div className="mt-4 flex items-center justify-between">
                     <p className="font-semibold text-lg">
                       Confidence:{" "}
-                      <span className={selectedScan.confidenceScore >= 80 ? "text-green-600" : selectedScan.confidenceScore >= 60 ? "text-amber-600" : "text-red-600"}>
+                      <span
+                        className={
+                          selectedScan.confidenceScore >= 80
+                            ? "text-green-600"
+                            : selectedScan.confidenceScore >= 60
+                              ? "text-amber-600"
+                              : "text-red-600"
+                        }
+                      >
                         {selectedScan.confidenceScore}%
                       </span>
                     </p>
@@ -799,7 +1171,8 @@ export function RequestDetail() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <ClipboardList className="h-4 w-4 text-primary" /> Investigation Note
+                  <ClipboardList className="h-4 w-4 text-primary" />{" "}
+                  Investigation Note
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -815,8 +1188,15 @@ export function RequestDetail() {
                         placeholder="Add investigation note..."
                         className="flex-1"
                       />
-                      <Button type="submit" disabled={actionLoading === "NOTE" || !noteText.trim()}>
-                        {actionLoading === "NOTE" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Send className="h-4 w-4 mr-1.5" />}
+                      <Button
+                        type="submit"
+                        disabled={actionLoading === "NOTE" || !noteText.trim()}
+                      >
+                        {actionLoading === "NOTE" ? (
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-1.5" />
+                        )}
                         Add Note
                       </Button>
                     </form>
@@ -842,69 +1222,91 @@ export function RequestDetail() {
                     <Trophy className="h-5 w-5" /> Bounty Reward
                   </CardTitle>
                   <span className="text-xl font-bold text-amber-700 flex items-center">
-                    <IndianRupee className="h-5 w-5" />{bounty.amount.toLocaleString()}
+                    <IndianRupee className="h-5 w-5" />
+                    {bounty.amount.toLocaleString()}
                   </span>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 mb-3 flex-wrap">
-                  <Badge variant="outline" className={`font-semibold ${
-                    bounty.status === "PAYMENT_COMPLETED" ? "bg-green-100 text-green-700 border-green-200"
-                      : bounty.status === "RELEASED_TO_TIPPER" ? "bg-blue-100 text-blue-700 border-blue-200"
-                      : bounty.status === "PAYMENT_FAILED" ? "bg-red-100 text-red-700 border-red-200"
-                      : bounty.status === "CANCELLED" ? "bg-gray-100 text-gray-600"
-                      : "bg-amber-100 text-amber-700 border-amber-200"
-                  }`}>
+                  <Badge
+                    variant="outline"
+                    className={`font-semibold ${
+                      bounty.status === "PAYMENT_COMPLETED"
+                        ? "bg-green-100 text-green-700 border-green-200"
+                        : bounty.status === "RELEASED_TO_TIPPER"
+                          ? "bg-blue-100 text-blue-700 border-blue-200"
+                          : bounty.status === "PAYMENT_FAILED"
+                            ? "bg-red-100 text-red-700 border-red-200"
+                            : bounty.status === "CANCELLED"
+                              ? "bg-gray-100 text-gray-600"
+                              : "bg-amber-100 text-amber-700 border-amber-200"
+                    }`}
+                  >
                     {bounty.status.replace(/_/g, " ")}
                   </Badge>
                   {bounty.awardedTipperContact && (
-                    <span className="text-sm text-muted-foreground">Awarded to: {bounty.awardedTipperContact}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Awarded to: {bounty.awardedTipperContact}
+                    </span>
                   )}
                   {bounty.paidAt && (
-                    <span className="text-xs text-muted-foreground">Paid: {new Date(bounty.paidAt).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Paid: {new Date(bounty.paidAt).toLocaleString()}
+                    </span>
                   )}
                 </div>
 
                 {/* Award bounty to a tipper */}
-                {request.status === "FOUND" && bounty.status === "PLEDGED" && tips.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Select a tip to award the bounty to:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {tips
-                        .filter((t) => t.contactInfo)
-                        .map((tip) => (
-                          <Button
-                            key={tip._id}
-                            variant="outline"
-                            size="sm"
-                            className="border-amber-500 text-amber-700 hover:bg-amber-100"
-                            disabled={bountyLoading === "AWARD"}
-                            onClick={async () => {
-                              setBountyLoading("AWARD");
-                              try {
-                                const updated = await api.awardBounty(id!, tip._id);
-                                setBounty(updated);
-                                fetchData();
-                              } catch (err) {
-                                setError(err instanceof Error ? err.message : "Failed to award bounty");
-                              } finally {
-                                setBountyLoading("");
-                              }
-                            }}
-                          >
-                            <Trophy className="h-3.5 w-3.5 mr-1" /> Award to {tip.contactInfo}
-                          </Button>
-                        ))}
-                      {tips.every((t) => !t.contactInfo) && (
-                        <span className="text-xs text-muted-foreground italic">
-                          No tips with contact info available for reward.
-                        </span>
-                      )}
+                {request.status === "FOUND" &&
+                  bounty.status === "PLEDGED" &&
+                  tips.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Select a tip to award the bounty to:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {tips
+                          .filter((t) => t.contactInfo)
+                          .map((tip) => (
+                            <Button
+                              key={tip._id}
+                              variant="outline"
+                              size="sm"
+                              className="border-amber-500 text-amber-700 hover:bg-amber-100"
+                              disabled={bountyLoading === "AWARD"}
+                              onClick={async () => {
+                                setBountyLoading("AWARD");
+                                try {
+                                  const updated = await api.awardBounty(
+                                    id!,
+                                    tip._id,
+                                  );
+                                  setBounty(updated);
+                                  fetchData();
+                                } catch (err) {
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to award bounty",
+                                  );
+                                } finally {
+                                  setBountyLoading("");
+                                }
+                              }}
+                            >
+                              <Trophy className="h-3.5 w-3.5 mr-1" /> Award to{" "}
+                              {tip.contactInfo}
+                            </Button>
+                          ))}
+                        {tips.every((t) => !t.contactInfo) && (
+                          <span className="text-xs text-muted-foreground italic">
+                            No tips with contact info available for reward.
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Release bounty */}
                 {bounty.status === "PAYMENT_COMPLETED" && (
@@ -918,14 +1320,24 @@ export function RequestDetail() {
                         setBounty(updated);
                         fetchData();
                       } catch (err) {
-                        setError(err instanceof Error ? err.message : "Failed to release");
+                        setError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to release",
+                        );
                       } finally {
                         setBountyLoading("");
                       }
                     }}
                   >
-                    {bountyLoading === "RELEASE" ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Handshake className="h-4 w-4 mr-1.5" />}
-                    {bountyLoading === "RELEASE" ? "Processing..." : "Mark Released to Tipper"}
+                    {bountyLoading === "RELEASE" ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Handshake className="h-4 w-4 mr-1.5" />
+                    )}
+                    {bountyLoading === "RELEASE"
+                      ? "Processing..."
+                      : "Mark Released to Tipper"}
                   </Button>
                 )}
               </CardContent>
@@ -938,7 +1350,8 @@ export function RequestDetail() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Lightbulb className="h-4 w-4 text-amber-500" /> Public Tips ({tips.length})
+                    <Lightbulb className="h-4 w-4 text-amber-500" /> Public Tips
+                    ({tips.length})
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button
@@ -971,26 +1384,38 @@ export function RequestDetail() {
               <CardContent>
                 {tips.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No tips received yet. Share the tip link to crowdsource information.
+                    No tips received yet. Share the tip link to crowdsource
+                    information.
                   </p>
                 ) : (
                   <div className="space-y-3">
                     {tips.map((tip) => (
                       <div
                         key={tip._id}
-                        onClick={() => tip.location ? setSelectedTip(tip) : undefined}
+                        onClick={() =>
+                          tip.location ? setSelectedTip(tip) : undefined
+                        }
                         className={`rounded-lg border border-amber-200 bg-amber-50 p-4 transition-all ${
-                          tip.location ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : ""
+                          tip.location
+                            ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5"
+                            : ""
                         }`}
                       >
-                        <p className="font-medium text-sm mb-1.5">{tip.message}</p>
+                        <p className="font-medium text-sm mb-1.5">
+                          {tip.message}
+                        </p>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          <span>{new Date(tip.createdAt).toLocaleString()}</span>
+                          <span>
+                            {new Date(tip.createdAt).toLocaleString()}
+                          </span>
                           {tip.location && (
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3 text-primary" />
-                              {tipLocationNames[tip._id] || `${tip.location.latitude.toFixed(4)}, ${tip.location.longitude.toFixed(4)}`}
-                              <span className="text-muted-foreground/60 ml-1">Click to view map</span>
+                              {tipLocationNames[tip._id] ||
+                                `${tip.location.latitude.toFixed(4)}, ${tip.location.longitude.toFixed(4)}`}
+                              <span className="text-muted-foreground/60 ml-1">
+                                Click to view map
+                              </span>
                             </span>
                           )}
                           {tip.contactInfo && (
@@ -1008,11 +1433,15 @@ export function RequestDetail() {
           )}
 
           {/* Tip Detail Dialog */}
-          <Dialog open={!!selectedTip && !!selectedTip.location} onOpenChange={() => setSelectedTip(null)}>
+          <Dialog
+            open={!!selectedTip && !!selectedTip.location}
+            onOpenChange={() => setSelectedTip(null)}
+          >
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" /> Tip Sighting Location
+                  <MapPin className="h-5 w-5 text-primary" /> Tip Sighting
+                  Location
                   {selectedTip && (
                     <span className="text-sm text-muted-foreground font-normal ml-2">
                       {new Date(selectedTip.createdAt).toLocaleString()}
@@ -1023,19 +1452,25 @@ export function RequestDetail() {
               {selectedTip && selectedTip.location && (
                 <div>
                   <div className="mb-4 space-y-2">
-                    <p className="font-medium text-sm">"{selectedTip.message}"</p>
+                    <p className="font-medium text-sm">
+                      "{selectedTip.message}"
+                    </p>
                     {selectedTip.contactInfo && (
                       <p className="text-sm text-sky-600 flex items-center gap-1">
-                        <Phone className="h-3.5 w-3.5" /> {selectedTip.contactInfo}
+                        <Phone className="h-3.5 w-3.5" />{" "}
+                        {selectedTip.contactInfo}
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">Location:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        Location:
+                      </span>{" "}
                       {tipLocationNames[selectedTip._id] || "Resolving..."}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <span className="font-medium">Coordinates:</span>{" "}
-                      {selectedTip.location.latitude.toFixed(6)}, {selectedTip.location.longitude.toFixed(6)}
+                      {selectedTip.location.latitude.toFixed(6)},{" "}
+                      {selectedTip.location.longitude.toFixed(6)}
                     </p>
                   </div>
                   <LocationPicker
@@ -1057,7 +1492,9 @@ export function RequestDetail() {
           {/* Quick Stats */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Case Summary</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Case Summary
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1083,9 +1520,12 @@ export function RequestDetail() {
                 <>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Bounty</span>
+                    <span className="text-sm text-muted-foreground">
+                      Bounty
+                    </span>
                     <span className="font-semibold text-sm text-amber-700 flex items-center">
-                      <IndianRupee className="h-3.5 w-3.5" />{bounty.amount.toLocaleString()}
+                      <IndianRupee className="h-3.5 w-3.5" />
+                      {bounty.amount.toLocaleString()}
                     </span>
                   </div>
                 </>
@@ -1094,8 +1534,13 @@ export function RequestDetail() {
                 <>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Duplicates</span>
-                    <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200 text-xs">
+                    <span className="text-sm text-muted-foreground">
+                      Duplicates
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="bg-red-100 text-red-700 border-red-200 text-xs"
+                    >
                       {duplicateAlerts.length}
                     </Badge>
                   </div>
@@ -1107,7 +1552,9 @@ export function RequestDetail() {
           {/* Quick Actions */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Quick Actions</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Quick Actions
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button
@@ -1141,25 +1588,43 @@ export function RequestDetail() {
           {events.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Recent Activity</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Recent Activity
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-64">
                   <div className="space-y-3">
-                    {events.slice(-5).reverse().map((evt) => {
-                      const cfg = EVENT_CONFIG[evt.action] || { icon: <FileText className="h-3 w-3" />, bg: "bg-gray-100 text-gray-500", label: evt.action };
-                      return (
-                        <div key={evt._id} className="flex items-start gap-2.5">
-                          <div className={`h-6 w-6 rounded-full ${cfg.bg} flex items-center justify-center shrink-0 mt-0.5`}>
-                            {cfg.icon}
+                    {events
+                      .slice(-5)
+                      .reverse()
+                      .map((evt) => {
+                        const cfg = EVENT_CONFIG[evt.action] || {
+                          icon: <FileText className="h-3 w-3" />,
+                          bg: "bg-gray-100 text-gray-500",
+                          label: evt.action,
+                        };
+                        return (
+                          <div
+                            key={evt._id}
+                            className="flex items-start gap-2.5"
+                          >
+                            <div
+                              className={`h-6 w-6 rounded-full ${cfg.bg} flex items-center justify-center shrink-0 mt-0.5`}
+                            >
+                              {cfg.icon}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium leading-tight">
+                                {cfg.label}
+                              </p>
+                              <p className="text-[0.65rem] text-muted-foreground">
+                                {new Date(evt.createdAt).toLocaleString()}
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium leading-tight">{cfg.label}</p>
-                            <p className="text-[0.65rem] text-muted-foreground">{new Date(evt.createdAt).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -1170,4 +1635,3 @@ export function RequestDetail() {
     </div>
   );
 }
-

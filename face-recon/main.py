@@ -15,7 +15,7 @@ THRESHOLD = 0.55
 SKIP = 2
 
 CCTVS = {
-    "CCTV-01": "video.mp4",
+    "CCTV-01": "video1.mp4",
     "CCTV-02": "video2.mp4"
 }
 # ---------------------------------------

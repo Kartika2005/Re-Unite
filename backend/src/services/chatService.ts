@@ -46,7 +46,7 @@ function haversineKm(
   lat1: number,
   lng1: number,
   lat2: number,
-  lng2: number
+  lng2: number,
 ): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -54,9 +54,25 @@ function haversineKm(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) ** 2;
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function calculateAge(dateOfBirth?: Date | string | null): number | null {
+  if (!dateOfBirth) return null;
+
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age >= 0 ? age : null;
 }
 
 // ─── DB helpers ─────────────────────────────────────────
@@ -72,7 +88,7 @@ async function getNearbyCases(lat: number, lng: number, radiusKm = 15) {
         lat,
         lng,
         c.lastKnownLocation.latitude,
-        c.lastKnownLocation.longitude
+        c.lastKnownLocation.longitude,
       ),
     }))
     .filter((c) => c.distance <= radiusKm)
@@ -129,7 +145,7 @@ async function searchCasesByName(name: string) {
 // ─── Build extra context based on intent ────────────────
 async function buildContextBlock(
   lastMessage: string,
-  location?: { latitude: number; longitude: number }
+  location?: { latitude: number; longitude: number },
 ): Promise<string> {
   const lower = lastMessage.toLowerCase().trim();
 
@@ -147,9 +163,8 @@ Instruction: Ask the user to type "/location <place>", pick a suggestion, then s
     }
     let block = `\n\n## NEARBY_CASES (within 15 km of queried location)\n`;
     for (const [i, n] of nearby.entries()) {
-      const age = n.doc.dateOfBirth
-        ? `~${Math.floor((Date.now() - new Date(n.doc.dateOfBirth).getTime()) / (365.25 * 86400000))}`
-        : "Unknown";
+      const computedAge = calculateAge(n.doc.dateOfBirth);
+      const age = computedAge !== null ? `~${computedAge}` : "Unknown";
       block += `${i + 1}. **${n.doc.name || "Unidentified"}** — ${n.doc.gender || "N/A"}, Age ${age}, Status: ${n.doc.status}, Reported: ${new Date(n.doc.createdAt).toLocaleDateString()}, Distance: ${n.distance.toFixed(1)} km\n`;
     }
     return block;
@@ -176,7 +191,7 @@ Instruction: Ask for a name, for example: /search Rahul\n`;
   // Statistics keywords
   if (
     /statistic|how many|total cases|case count|resolution rate|dashboard stats|overview/i.test(
-      lower
+      lower,
     )
   ) {
     const s = await getCaseStats();
@@ -193,7 +208,7 @@ Instruction: Ask for a name, for example: /search Rahul\n`;
 
   // Auto-detect name search (e.g. "find Priya", "where is Rahul", or just a person name)
   const nameMatch = lower.match(
-    /(?:find|search|look(?:ing)?\s*(?:for)?|where\s*is|any\s*(?:info|update|case)\s*(?:on|about|for)?)\s+(.{2,})/i
+    /(?:find|search|look(?:ing)?\s*(?:for)?|where\s*is|any\s*(?:info|update|case)\s*(?:on|about|for)?)\s+(.{2,})/i,
   );
   if (nameMatch) {
     const name = (nameMatch[1] || "").replace(/[?.!]/g, "").trim();
@@ -216,7 +231,7 @@ Instruction: Ask for a name, for example: /search Rahul\n`;
 export async function streamChat(
   messages: { role: string; content: string }[],
   userRole: string,
-  location?: { latitude: number; longitude: number }
+  location?: { latitude: number; longitude: number },
 ) {
   const lastMessage = messages[messages.length - 1]?.content || "";
   const contextBlock = await buildContextBlock(lastMessage, location);

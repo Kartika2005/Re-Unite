@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   FileSearch,
   FilePlus,
+  UserRoundPlus,
   Map,
   MessageSquare,
   LogOut,
@@ -38,6 +39,11 @@ const citizenLinks = [
     title: "My Requests",
     url: "/citizen/requests",
     icon: FileSearch,
+  },
+  {
+    title: "Add Family Member",
+    url: "/citizen/family-members",
+    icon: UserRoundPlus,
   },
 ];
 

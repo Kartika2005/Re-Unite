@@ -17,6 +17,21 @@ export interface IUser {
   createdAt: Date;
 }
 
+export interface IAssociatedFamilyMember {
+  _id: string;
+  citizenId: string;
+  fullName: string;
+  relation: string;
+  gender?: string;
+  dateOfBirth?: Date;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  rfidTagId: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ILastKnownLocation {
   latitude: number;
   longitude: number;
@@ -117,6 +132,22 @@ export interface SubmitTipDTO {
     longitude: number;
   };
   contactInfo?: string;
+}
+
+export interface CreateFamilyMemberDTO {
+  fullName: string;
+  relation: string;
+  gender?: string;
+  dateOfBirth?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  rfidTagId: string;
+  notes?: string;
+}
+
+export interface CaptureRfidDTO {
+  sessionId: string;
+  tagId?: string;
 }
 
 export type CaseEventAction =

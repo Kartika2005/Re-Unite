@@ -41,7 +41,7 @@ export function TipPage() {
       .getPublicCaseById(caseId)
       .then(setCaseData)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load case")
+        setError(err instanceof Error ? err.message : "Failed to load case"),
       )
       .finally(() => setLoading(false));
   }, [caseId]);
@@ -78,7 +78,9 @@ export function TipPage() {
     return (
       <div className="max-w-2xl mx-auto p-8 text-center">
         <AlertCircle className="h-10 w-10 mx-auto mb-3 text-destructive" />
-        <p className="text-destructive font-medium">{error || "Case not found."}</p>
+        <p className="text-destructive font-medium">
+          {error || "Case not found."}
+        </p>
       </div>
     );
 
@@ -90,8 +92,9 @@ export function TipPage() {
             <CheckCircle className="h-14 w-14 mx-auto mb-4 text-green-500" />
             <h2 className="text-xl font-bold mb-2">Thank You!</h2>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              Your tip has been submitted and will be reviewed by the investigating
-              team. Every bit of information helps bring someone home.
+              Your tip has been submitted and will be reviewed by the
+              investigating team. Every bit of information helps bring someone
+              home.
             </p>
           </CardContent>
         </Card>
@@ -99,6 +102,22 @@ export function TipPage() {
     );
 
   const c = caseData.case;
+  const computedAge =
+    c.age ??
+    (c.dateOfBirth
+      ? (() => {
+          const dob = new Date(c.dateOfBirth);
+          if (Number.isNaN(dob.getTime())) return null;
+          const today = new Date();
+          let age = today.getFullYear() - dob.getFullYear();
+          const hasHadBirthdayThisYear =
+            today.getMonth() > dob.getMonth() ||
+            (today.getMonth() === dob.getMonth() &&
+              today.getDate() >= dob.getDate());
+          if (!hasHadBirthdayThisYear) age -= 1;
+          return age >= 0 ? age : null;
+        })()
+      : null);
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-5">
@@ -108,7 +127,8 @@ export function TipPage() {
           <Search className="h-5 w-5" /> Submit a Tip
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Help us find this missing person. All tips are anonymous unless you provide contact info.
+          Help us find this missing person. All tips are anonymous unless you
+          provide contact info.
         </p>
       </div>
 
@@ -121,10 +141,23 @@ export function TipPage() {
             className="w-24 h-24 rounded-lg object-cover bg-muted shrink-0"
           />
           <div className="text-sm space-y-1">
-            <h3 className="font-semibold text-base">{c.name || "Unidentified Person"}</h3>
-            {c.gender && <p className="text-muted-foreground">Gender: {c.gender}</p>}
-            {c.bloodGroup && <p className="text-muted-foreground">Blood Group: {c.bloodGroup}</p>}
-            <p className="text-muted-foreground">Reported: {new Date(c.createdAt).toLocaleDateString()}</p>
+            <h3 className="font-semibold text-base">
+              {c.name || "Unidentified Person"}
+            </h3>
+            {c.gender && (
+              <p className="text-muted-foreground">Gender: {c.gender}</p>
+            )}
+            {computedAge !== null && (
+              <p className="text-muted-foreground">Age: {computedAge}</p>
+            )}
+            {c.bloodGroup && (
+              <p className="text-muted-foreground">
+                Blood Group: {c.bloodGroup}
+              </p>
+            )}
+            <p className="text-muted-foreground">
+              Reported: {new Date(c.createdAt).toLocaleDateString()}
+            </p>
             <Badge
               variant="secondary"
               className={
@@ -139,12 +172,14 @@ export function TipPage() {
             </Badge>
             {caseData.tipCount > 0 && (
               <p className="text-xs text-sky-600 mt-1">
-                {caseData.tipCount} tip{caseData.tipCount !== 1 ? "s" : ""} received so far
+                {caseData.tipCount} tip{caseData.tipCount !== 1 ? "s" : ""}{" "}
+                received so far
               </p>
             )}
             {caseData.bountyAmount > 0 && (
               <Badge className="mt-1 bg-amber-100 text-amber-800 border-amber-300 gap-1">
-                <Trophy className="h-3 w-3" /> Bounty: ₹{caseData.bountyAmount.toLocaleString()}
+                <Trophy className="h-3 w-3" /> Bounty: ₹
+                {caseData.bountyAmount.toLocaleString()}
               </Badge>
             )}
           </div>
@@ -208,8 +243,11 @@ export function TipPage() {
                       onChange={(val) =>
                         setLocation(
                           val
-                            ? { latitude: val.latitude, longitude: val.longitude }
-                            : null
+                            ? {
+                                latitude: val.latitude,
+                                longitude: val.longitude,
+                              }
+                            : null,
                         )
                       }
                     />
