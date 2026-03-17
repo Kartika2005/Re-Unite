@@ -18,25 +18,49 @@ REUNITE follows a **human-in-the-loop** approach where AI assists but police mak
 
 ```
 reunite-revamp/
-├── backend/           # Express API server
+├── backend/                    # Express + Bun API server
 │   ├── src/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── middlewares/
-│   │   └── types/
-│   └── docker-compose.yml
-├── frontend/          # React UI
-│   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── context/
-│       ├── api/
-│       └── types/
-└── face-recon/        # Face recognition service
-    ├── main.py
-    └── static/
+│   │   ├── controllers/        # Route handlers (auth, police, citizen, chat, bounty)
+│   │   ├── middlewares/        # JWT auth, upload handling
+│   │   ├── models/             # MongoDB models (requests, tips, scans, duplicates, bounty, users)
+│   │   ├── routes/             # API route wiring
+│   │   ├── services/           # Integrations (face-recon, Groq, Cloudinary, PhonePe, WhatsApp)
+│   │   ├── types/
+│   │   ├── index.ts            # App bootstrap
+│   │   ├── socket.ts           # Socket.IO server wiring
+│   │   └── seed.ts             # Dev seed script
+│   ├── docker-compose.yml      # MongoDB local container
+│   └── package.json
+├── frontend/                   # React + Vite web app
+│   ├── src/
+│   │   ├── api/                # Typed API client
+│   │   ├── components/
+│   │   │   ├── ui/             # shadcn/ui primitives
+│   │   │   └── ...             # App-specific shared components
+│   │   ├── context/            # Auth context/provider
+│   │   ├── hooks/              # Socket + utility hooks
+│   │   ├── lib/                # Utilities (cn, helpers)
+│   │   ├── pages/
+│   │   │   ├── citizen/        # Citizen flows
+│   │   │   ├── police/         # Police dashboard + case detail flows
+│   │   │   └── ...             # Public pages (map, chat, tip, bounty result)
+│   │   ├── types/              # Shared frontend domain types
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── components.json         # shadcn config
+│   └── package.json
+├── face-recon/                 # Python FastAPI face-recognition microservice
+│   ├── main.py
+│   ├── static/
+│   ├── pyproject.toml
+│   └── headers.txt
+├── mock-adhaar/                # Mock Aadhaar lookup service for development
+│   ├── index.ts
+│   ├── aadhaar_cards.json
+│   └── package.json
+├── sow.md
+└── README.md
 ```
 
 ## 🚀 Quick Start

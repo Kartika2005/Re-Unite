@@ -1,73 +1,74 @@
-# React + TypeScript + Vite
+# REUNITE Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite application for citizen and police workflows.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 19 + TypeScript
+- Vite 7
+- Tailwind CSS v4
+- shadcn/ui + Radix primitives
+- Lucide icons
+- React Router
+- Socket.IO client for real-time case updates
+- Leaflet + React Leaflet for map views
 
-## React Compiler
+## Features Implemented
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Role-based authenticated app shell with collapsible sidebar
+- Citizen flows: report missing person, my requests, bounty payment flow
+- Police flows: dashboard, request detail investigation, scan results, notes, duplicate alerts
+- Public flows: tip page, case map, AI chat, bounty result page
+- Real-time UI updates via WebSocket events
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+frontend/
+├── src/
+│   ├── api/                # Typed API client wrappers
+│   ├── assets/
+│   ├── components/
+│   │   ├── ui/             # shadcn/ui primitives
+│   │   └── ...             # app-level shared components
+│   ├── context/            # Auth context/provider
+│   ├── hooks/              # useSocket, use-mobile
+│   ├── lib/                # utility helpers (cn, etc.)
+│   ├── pages/
+│   │   ├── citizen/
+│   │   ├── police/
+│   │   └── ...             # Chat, CaseMap, TipPage, AuthPages...
+│   ├── types/
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── components.json         # shadcn config
+├── package.json
+└── vite.config.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
+bun run dev      # start dev server
+bun run build    # type-check + production build
+bun run lint     # eslint
+bun run preview  # preview production build
 ```
+
+Dev server runs on `http://localhost:5173` by default.
+
+## Environment Variables
+
+Create `.env` in this folder:
+
+```env
+VITE_API_URL=http://localhost:3001/api
+VITE_GEOAPIFY_KEY=your_geoapify_key
+```
+
+## Notes
+
+- Leaflet CSS is imported in `src/main.tsx`.
+- If backend URL/port changes, update `VITE_API_URL`.
