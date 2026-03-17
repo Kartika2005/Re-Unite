@@ -36,13 +36,22 @@ interface LocationSuggestion {
 
 const GEOAPIFY_KEY = import.meta.env.VITE_GEOAPIFY_KEY || "";
 
-const QUICK_ACTIONS = [
+const BASE_QUICK_ACTIONS = [
   { label: "Search by location", icon: MapPin, prompt: "/location ", auto: false },
   { label: "Case statistics", icon: BarChart3, prompt: "Show me the current case statistics and overview", auto: true },
-  { label: "How to report", icon: FileText, prompt: "How do I report a missing person on Reunite?", auto: true },
   { label: "Search a case", icon: Search, prompt: "/search ", auto: false },
   { label: "Emergency contacts", icon: Phone, prompt: "Give me emergency helpline numbers", auto: true },
-  { label: "Area safety check", icon: Shield, prompt: "/location ", auto: false },
+  { label: "Area check", icon: Shield, prompt: "/location ", auto: false },
+];
+
+const CITIZEN_QUICK_ACTIONS = [
+  { label: "How to report", icon: FileText, prompt: "How do I report a missing person on Reunite?", auto: true },
+  ...BASE_QUICK_ACTIONS,
+];
+
+const POLICE_QUICK_ACTIONS = [
+  { label: "Investigation workflow", icon: FileText, prompt: "What is the recommended police workflow from REPORTED to FOUND?", auto: true },
+  ...BASE_QUICK_ACTIONS,
 ];
 
 function md(text: string): string {
@@ -60,6 +69,7 @@ function md(text: string): string {
 
 export function Chat() {
   const { user } = useAuth();
+  const quickActions = user?.role === "POLICE" ? POLICE_QUICK_ACTIONS : CITIZEN_QUICK_ACTIONS;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -125,6 +135,33 @@ export function Chat() {
     const text = (overrideInput ?? input).trim();
     if (!text || streaming) return;
 
+    if (text.toLowerCase().startsWith("/location") && !selectedLocation) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: text },
+        {
+          role: "assistant",
+          content:
+            "Please choose a location from the dropdown suggestions before sending /location. Example: type /location Mumbai, select a suggestion, then send.",
+        },
+      ]);
+      setShowDropdown(false);
+      return;
+    }
+
+    if (text.toLowerCase() === "/search" || text.toLowerCase() === "/search ") {
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: text },
+        {
+          role: "assistant",
+          content:
+            "Please provide a name with /search. Example: /search Rahul",
+        },
+      ]);
+      return;
+    }
+
     const userMsg: ChatMessage = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -166,7 +203,7 @@ export function Chat() {
     }
   };
 
-  const handleQuickAction = (action: (typeof QUICK_ACTIONS)[number]) => {
+  const handleQuickAction = (action: (typeof quickActions)[number]) => {
     if (action.auto) {
       sendMessage(action.prompt);
     } else {
@@ -206,7 +243,7 @@ export function Chat() {
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg mx-auto">
-                {QUICK_ACTIONS.map((a, i) => (
+                {quickActions.map((a, i) => (
                   <Button
                     key={i}
                     variant="outline"

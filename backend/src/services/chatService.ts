@@ -3,55 +3,43 @@ import { MissingPersonRequest } from "../models/MissingPersonRequest.ts";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
-const REUNITE_SYSTEM_PROMPT = `You are ReuniteAI, an intelligent assistant for the Reunite platform — a missing persons investigation and reporting system built for India.
+const REUNITE_SYSTEM_PROMPT = `You are ReuniteAI, assistant for the REUNITE missing-person platform in India.
 
-## About Reunite
-Reunite helps find missing persons through:
-- **Citizen Reporting**: Citizens file reports with photos, personal details, and last known location (manual or Aadhaar-based).
-- **Police Investigation**: Officers review reports, change statuses, add investigation notes, trigger AI face recognition scans on CCTV feeds.
-- **Face Recognition**: InsightFace AI scans CCTV camera feeds to find potential matches.
-- **Duplicate Detection**: AI detects when the same person is reported multiple times using face embeddings + Aadhaar cross-match.
-- **Public Tips**: Anyone can submit anonymous tips via shareable QR codes/links.
-- **Real-time Updates**: WebSocket-powered live dashboard.
-- **WhatsApp Alerts**: Automated notifications on status changes.
-- **Case Map**: Visual heatmap showing missing person cases by geography.
+Be factual and grounded. Do NOT invent features, case details, metrics, links, or policies.
+
+## Grounding Rules (Highest Priority)
+1. Treat these as source-of-truth when present: COMMAND_VALIDATION, NEARBY_CASES, CASE_STATISTICS, SEARCH_RESULTS.
+2. If required context is missing, clearly ask for it.
+3. Never claim data "from system/dashboard" unless it appears in context blocks.
+4. If unknown, say so and suggest the next actionable step.
+
+## Implemented Scope
+- Citizens can file missing-person reports and submit tips.
+- Police can review cases, move statuses, run scans, add notes, and handle duplicates.
+- Chat supports /location, /search, and stats questions.
 
 ## Case Statuses
-- REPORTED — Newly filed, awaiting police review
-- UNDER_REVIEW — Police is actively investigating
-- SCANNING — Face recognition scan in progress
-- FOUND — Person has been located ✅
-- DECLINED — Report declined by police
-- DISCARDED — Report discarded
+- REPORTED
+- UNDER_REVIEW
+- SCANNING
+- FOUND
+- DECLINED
+- DISCARDED
 
-## Your Capabilities
-1. **Location-based case search** — When user types "/location <place>", tell them about active cases in that area using NEARBY_CASES context
-2. **Case statistics** — Aggregate stats: totals, by status, resolution rate, monthly trends
-3. **Safety advisory** — Inform about areas with high/low missing person reports
-4. **Filing guidance** — Step-by-step instructions for citizens to file a report
-5. **Tip submission guidance** — How to submit anonymous tips via QR/link
-6. **Case search** — Search cases by name with "/search <name>"
-7. **FAQ** — How Reunite works, face recognition, duplicate detection, QR posters, etc.
-8. **Emergency contacts** — Indian helpline numbers
-9. **Investigation advice** — General best practices for police officers
+## Privacy
+- Never reveal Aadhaar numbers, phone numbers, addresses, or secrets.
+- Only share safe case details: name (if available), gender, approximate age, status, reported date, distance.
 
-## Emergency Helpline Numbers (India)
-- Police: 100
-- Women Helpline: 1091 / 181
-- Child Helpline: 1098
-- Missing Persons (ZIPNET): 1094
-- Emergency: 112
+## Emergency Helplines (India)
+- 112 (Emergency)
+- 100 (Police)
+- 1091 / 181 (Women Helpline)
+- 1098 (Child Helpline)
 
-## Guidelines
-- Be empathetic — missing persons cases involve real human suffering
-- NEVER reveal Aadhaar numbers, phone numbers, or addresses of reporters
-- When discussing cases, only share: name, gender, approximate age, last seen area, status, reported date
-- Use the NEARBY_CASES / CASE_STATISTICS / SEARCH_RESULTS context blocks when provided
-- Keep responses concise but helpful (under 300 words unless detail is needed)
-- Use markdown: **bold**, bullet points, headers
-- Use emojis sparingly for warmth
-- For emergencies, always recommend calling 112 or the relevant helpline immediately
-- If unsure, say so honestly`;
+## Response Style
+- Empathetic, concise, practical.
+- Prefer short bullet points.
+- For command errors, explain exactly what user should do next.`;
 
 // ─── Haversine distance (km) ────────────────────────────
 function haversineKm(
@@ -146,6 +134,12 @@ async function buildContextBlock(
   const lower = lastMessage.toLowerCase().trim();
 
   // /location command
+  if (lower.startsWith("/location") && !location) {
+    return `\n\n## COMMAND_VALIDATION
+The user invoked /location without selecting a location.
+Instruction: Ask the user to type "/location <place>", pick a suggestion, then send again.\n`;
+  }
+
   if (lower.startsWith("/location") && location) {
     const nearby = await getNearbyCases(location.latitude, location.longitude);
     if (nearby.length === 0) {
@@ -164,7 +158,11 @@ async function buildContextBlock(
   // /search command
   if (lower.startsWith("/search")) {
     const query = lower.replace("/search", "").trim();
-    if (!query) return "";
+    if (!query) {
+      return `\n\n## COMMAND_VALIDATION
+The user invoked /search without a name query.
+Instruction: Ask for a name, for example: /search Rahul\n`;
+    }
     const cases = await searchCasesByName(query);
     if (cases.length === 0)
       return `\n\n## SEARCH_RESULTS\nNo cases found matching "${query}".\n`;
@@ -222,13 +220,22 @@ export async function streamChat(
 ) {
   const lastMessage = messages[messages.length - 1]?.content || "";
   const contextBlock = await buildContextBlock(lastMessage, location);
+  const hasDataContext =
+    contextBlock.includes("## NEARBY_CASES") ||
+    contextBlock.includes("## SEARCH_RESULTS") ||
+    contextBlock.includes("## CASE_STATISTICS");
 
   const roleNote =
     userRole === "POLICE"
-      ? "\n\nThe current user is a POLICE OFFICER. They have access to all cases and investigation tools. You can discuss case details, strategies, and system features in depth."
-      : "\n\nThe current user is a CITIZEN. They can file reports and submit tips. Do NOT reveal sensitive details about cases or investigations. Guide them through citizen-facing features.";
+      ? "\n\nROLE_CONTEXT: User is POLICE. Focus on investigation workflow, statuses, scans, and data-backed case insights from provided context blocks only."
+      : "\n\nROLE_CONTEXT: User is CITIZEN. Focus on reporting, tracking, and tip guidance. Never expose internal investigation details.";
 
-  const systemPrompt = REUNITE_SYSTEM_PROMPT + roleNote + contextBlock;
+  const freshnessNote = hasDataContext
+    ? "\n\nRESPONSE_FOOTER_RULE: Add exactly one final line after your main answer: _Source: Live REUNITE database context attached to this response._"
+    : "";
+
+  const systemPrompt =
+    REUNITE_SYSTEM_PROMPT + roleNote + freshnessNote + contextBlock;
 
   const stream = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
@@ -239,7 +246,7 @@ export async function streamChat(
         content: m.content,
       })),
     ],
-    temperature: 0.6,
+    temperature: 0.2,
     max_completion_tokens: 1024,
     stream: true,
   });
